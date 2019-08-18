@@ -1,6 +1,7 @@
 import { MovieService } from './../../services/movie.service';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Storage } from '@ionic/storage';
 
 @Component({
   selector: 'app-movie-details',
@@ -9,14 +10,14 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class MovieDetailsPage implements OnInit {
 
-  information = null;
+  public information = null;
+  public checkBookmark = false;
 
-  /**
-   * Constructor of our details page
-   * @param activatedRoute Information about the route we are on
-   * @param movieService The movie Service to get data
-   */
-  constructor(private activatedRoute: ActivatedRoute, private movieService: MovieService) { }
+  constructor(
+    private activatedRoute: ActivatedRoute,
+    private movieService: MovieService,
+    private storage: Storage
+  ) { }
 
   ngOnInit() {
     // Get the ID that was passed with the URL
@@ -26,9 +27,37 @@ export class MovieDetailsPage implements OnInit {
     this.movieService.getDetails(id).subscribe(result => {
       this.information = result;
     });
+    if (id) {
+      this.checkBookmarkList(id);
+    }
   }
 
   openWebsite() {
     window.open(this.information.Website, '_blank');
+  }
+
+  changeBookmark(dataBookmark) {
+    let getBookmark = JSON.parse(localStorage.getItem('bookmark'));
+    if (!getBookmark && dataBookmark) {
+      localStorage.setItem('bookmark', JSON.stringify(new Array(dataBookmark)));
+    } else {
+      const checkData = getBookmark.some(valSome => valSome.imdbID === dataBookmark.imdbID);
+      if (!checkData) {
+        getBookmark.push(dataBookmark);
+      } else {
+        const removeBookmark = getBookmark.filter(rmVal => rmVal.imdbID !== dataBookmark.imdbID);
+        getBookmark = removeBookmark;
+      }
+
+      localStorage.setItem('bookmark', JSON.stringify(getBookmark));
+    }
+    this.checkBookmarkList(dataBookmark.imdbID);
+  }
+
+  checkBookmarkList(dataBookmarkID) {
+    const getBookmark = JSON.parse(localStorage.getItem('bookmark'));
+    if (getBookmark && getBookmark.length > 0) {
+      this.checkBookmark = getBookmark.some(valSome => valSome.imdbID === dataBookmarkID);
+    }
   }
 }
